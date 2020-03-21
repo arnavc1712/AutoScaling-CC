@@ -12,9 +12,9 @@ s = sched.scheduler(time.time, time.sleep)
 # cd /home/ubuntu/CloudComputingProj1 && python processQueue.py
 # """
 
-ec2_client = boto3.client('ec2',region="us-east-1")
+ec2_client = boto3.client('ec2',region_name="us-east-1")
 
-sqs_client = boto3.client('sqs',region="us-east-1")
+sqs_client = boto3.client('sqs',region_name="us-east-1")
 
 # ec2_res = boto3.resource('ec2')
 waiter_run = ec2_client.get_waiter('instance_running')
