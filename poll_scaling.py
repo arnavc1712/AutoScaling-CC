@@ -278,7 +278,7 @@ def poll_for_scaling():
 		else:
 			print("Scaling UP by ",min(num_instances_needed,max_extra_instances))
 			for i in range(min(num_instances_needed,max_extra_instances)):
-				t1.threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][i]))
+				t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][i]))
 				t1.start()
 			
 		# else:
