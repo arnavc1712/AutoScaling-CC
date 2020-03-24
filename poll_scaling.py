@@ -79,13 +79,17 @@ def scale_up_instances(instance_list):
 	for i,(inst_dn,inst_id) in enumerate(zip(instance_dns_names,instance_ids)):
 		while True:
 			try:
-				msg = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)["Messages"][0]
-				msg_receipt_handle = msg["ReceiptHandle"] 
-				msg_body = msg["Body"]
-				x = threading.Thread(target=slave_thread,args=(inst_dn,inst_id,str(msg_body),str(msg_receipt_handle)))
-				x.start()
-				pool.append(x)
+				msg = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)
+				if "Messages" in msg and len(msg["Messages"])>0:
+					msg = msg["Messages"][0]
+					msg_receipt_handle = msg["ReceiptHandle"] 
+					msg_body = msg["Body"]
+
+					x = threading.Thread(target=slave_thread,args=(inst_dn,inst_id,str(msg_body),str(msg_receipt_handle)))
+					x.start()
+					pool.append(x)
 				break
+
 			except Exception as err:
 				print(err)
 
@@ -236,11 +240,13 @@ def poll_for_scaling():
 		elif num_instances_needed<=max_extra_instances:
 			print("Required instances is less than max extra instances")
 			print("Scaling UP by ",num_instances_needed)
-			scale_up_instances(stopped_states[:num_instances_needed])
+			t1= threading.Thread(target=scale_up_instances,args=(stopped_states[:num_instances_needed],))
+			t1.start()
 		else:
 			print("Required instances is more than max extra instances")
 			print("Scaling UP by ",max_extra_instances)
-			scale_up_instances(stopped_states[:max_extra_instances])
+			t1= threading.Thread(target=scale_up_instances,args=(stopped_states[:max_extra_instances],))
+			t1.start()
 
 		
 			
