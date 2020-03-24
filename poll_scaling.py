@@ -93,7 +93,17 @@ def slave_thread(host,inst_id,msg_body,msg_receipt_handle):
 # 			except Exception as err:
 # 				print(err)
 
-
+def handle_visibility(queue_url, reciept_handle, value):
+    logging.info("Handing visibility for ", reciept_handle)
+    try:
+        response = sqs_client.change_message_visibility(
+            QueueUrl= queue_url,
+            ReceiptHandle=reciept_handle,
+            VisibilityTimeout=value
+        )
+        print(response)
+    except Exception as e:
+        print(e)
 
 def scale_up_instances(instance_id,message):
 	max_number_tries = 10
@@ -112,12 +122,18 @@ def scale_up_instances(instance_id,message):
 		time.sleep(3)
 		max_number_tries-=1
 
+	
+
 	instance_dns_names,instance_ids = get_inst_dns_names([instance_id])
 	inst_dns = instance_dns_names[0]
 	inst_id = instance_ids[0]
 
 	msg_body = message["Body"]
 	msg_receipt_handle = message["ReceiptHandle"]
+
+	if max_number_tries==0:
+		handle_visibility('https://sqs.us-east-1.amazonaws.com/056594258736/video-process',msg_receipt_handle,0)
+		return
 
 	slave_thread(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle))
 
