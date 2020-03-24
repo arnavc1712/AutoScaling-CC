@@ -80,7 +80,8 @@ def fetch_instances(status):
 	for elem in response['Reservations']:
 		for instance in elem["Instances"]:
 			if instance["State"]["Name"]==status:
-				instance_list.append(instance["InstanceId"])
+				if instance["InstanceId"]!="i-06389036ae7bedc1d":
+					instance_list.append(instance["InstanceId"])
 
 
 	return instance_list

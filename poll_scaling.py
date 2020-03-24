@@ -22,7 +22,7 @@ waiter_stop = ec2_client.get_waiter('instance_stopped')
 
 
 
-def slave_thread(host,inst_id):
+def slave_thread(host,inst_id,msg_body,msg_receipt_handle):
 	ssh = paramiko.SSHClient()
 	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	print('Connecting to ' + host)
@@ -35,7 +35,7 @@ def slave_thread(host,inst_id):
 		except Exception as err:
 			print(err)
 	
-	stdin, stdout, stderr = ssh.exec_command("pip install boto3;Xvfb :1 & export DISPLAY=:1;cd /home/ubuntu/CloudComputingProj1 && sudo git pull origin master;cd /home/ubuntu/CloudComputingProj1 && sudo python processQueue.py;")
+	stdin, stdout, stderr = ssh.exec_command(f"pip install boto3;Xvfb :1 & export DISPLAY=:1;cd /home/ubuntu/CloudComputingProj1 && sudo git pull origin master;cd /home/ubuntu/CloudComputingProj1 && sudo python processQueue.py {msg_body} {msg_receipt_handle};")
 	print(stdout.read())
 	print(stderr.read())
 	# channel = ssh.invoke_shell()
@@ -77,9 +77,18 @@ def scale_up_instances(instance_list):
 	instance_dns_names,instance_ids = get_inst_dns_names(instance_list)
 	print(instance_dns_names)
 	for i,(inst_dn,inst_id) in enumerate(zip(instance_dns_names,instance_ids)):
-		x = threading.Thread(target=slave_thread,args=(inst_dn,inst_id))
-		x.start()
-		pool.append(x)
+		while True:
+			try:
+				msg = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)["Messages"][0]
+				msg_receipt_handle = msg["ReceiptHandle"] 
+				msg_body = msg["Body"]
+				x = threading.Thread(target=slave_thread,args=(inst_dn,inst_id,str(msg_body),str(msg_receipt_handle)))
+				x.start()
+				pool.append(x)
+				break
+			except Exception as err:
+				print(err)
+
 
 
 	# for thread in pool:
@@ -127,10 +136,11 @@ def fetch_instances(status=None,instance_ids=None):
 	instances = []
 	for elem in response['Reservations']:
 		for instance in elem["Instances"]:
-			if status != None and instance["State"]["Name"]==status:
-				instances.append(instance)
-			elif instance_ids!=None:
-				instances.append(instance)
+			if instance["InstanceId"]!="i-06389036ae7bedc1d":
+				if status != None and instance["State"]["Name"]==status:
+					instances.append(instance)
+				elif instance_ids!=None:
+					instances.append(instance)
 			# 	print(instance["PublicDnsName"])
 			# 	instance_list.append(instance["InstanceId"])
 
@@ -258,6 +268,6 @@ def poll_for_scaling():
 
 while True:
 	poll_for_scaling()
-	time.sleep(5)
+	time.sleep(10)
 
 # scale_up_instances(['i-0146e0336e7162a36'])

@@ -57,14 +57,15 @@ def create_instances(num):
 	instance_ids = []
 	print(instance)
 	for elem in instance['Instances']:
-		instance_ids.append(elem["InstanceId"])
+		if elem["Name"]!="Master":
+			instance_ids.append(elem["InstanceId"])
 
 	print(instance_ids)
-	waiter.wait(
-	    InstanceIds=instance_ids,
-	    DryRun=False
-	)
-	stop_instances(instance_ids)
+	# waiter.wait(
+	#     InstanceIds=instance_ids,
+	#     DryRun=False
+	# )
+	# stop_instances(instance_ids)
 
 
 create_instances(5)
