@@ -259,7 +259,7 @@ def poll_for_scaling():
 
 	# print("Number of instances to scale up/down: ",req_instances)
 	print("\n\n\n")
-	queue = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)
+	
 
 	if num_instances_needed>0:
 		if len(stopped_states)<num_instances_needed and len(stopping_states)>0: ## If there are enough stopped states, do not scale, otherwise wait for instances which are stopping
@@ -278,8 +278,12 @@ def poll_for_scaling():
 		else:
 			print("Scaling UP by ",min(num_instances_needed,max_extra_instances))
 			for i in range(min(num_instances_needed,max_extra_instances)):
-				t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][i]))
-				t1.start()
+				queue = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)
+				if "Messages" in queue:
+					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
+					t1.start()
+				else:
+					break
 			
 		# else:
 		# 	print("Required instances is more than max extra instances")
