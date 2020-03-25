@@ -294,9 +294,10 @@ def poll_for_scaling():
 		max_extra_instances = max_instance_limit - len(instance_running) ## Maximum extra instances we can add
 		print(f"Max Extra instances: {max_extra_instances}")
 		print(f"Counter value: {counter}")
-	
-		if max_extra_instances==0:
+		if counter>=5:
 			print("We have reached our limit. Cannot scale up")
+		# if max_extra_instances==0:
+		# 	print("We have reached our limit. Cannot scale up")
 		# elif num_instances_needed<=max_extra_instances:
 		# 	print("Required instances is less than max extra instances")
 		else:
@@ -306,6 +307,7 @@ def poll_for_scaling():
 				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
 					print("got the message")
+					counter+=num_instances_needed
 					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
 					t1.start()
 					t1.join()
