@@ -6,6 +6,7 @@ import threading
 
 import sched, time
 s = sched.scheduler(time.time, time.sleep)
+counter = 0
 
 # userData= """#!/bin/bash
 # Xvfb :1 & export DISPLAY=:1;
@@ -244,6 +245,7 @@ def get_queue_attributes():
 
 
 def poll_for_scaling():
+	global counter
 	queue_attr = get_queue_attributes()["Attributes"]
 	num_messages_queue = int(queue_attr["ApproximateNumberOfMessages"])
 	acceptable_backlog = 1
@@ -290,8 +292,10 @@ def poll_for_scaling():
 		max_extra_instances = max_instance_limit - len(instance_running) ## Maximum extra instances we can add
 		print(f"Max Extra instances: {max_extra_instances}")
 		
-		if max_extra_instances==0:
-			print("We have reached our limit. Cannot scale up")
+		if counter==5:
+			print("We habve reached out limit cannot scale up")
+		# if max_extra_instances==0:
+		# 	print("We have reached our limit. Cannot scale up")
 		# elif num_instances_needed<=max_extra_instances:
 		# 	print("Required instances is less than max extra instances")
 		else:
@@ -300,6 +304,7 @@ def poll_for_scaling():
 				print("Gone inside")
 				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
+					counter+=1
 					print("Got message, scaling up")
 					# t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
 					# t1.start()
