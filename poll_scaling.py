@@ -109,7 +109,8 @@ def handle_visibility(queue_url, reciept_handle, value):
         print(e)
 
 def scale_up_instances(instance_id,message):
-	print(f"Inside thread for instance {instance_id} and Message {message["Body"]}")
+	msg_body = message["Body"]
+	print(f"Inside thread for instance {instance_id} and Message {msg_body}")
 	# max_number_tries = 10
 	# while max_number_tries>0:
 
