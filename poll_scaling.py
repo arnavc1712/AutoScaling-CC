@@ -109,36 +109,37 @@ def handle_visibility(queue_url, reciept_handle, value):
         print(e)
 
 def scale_up_instances(instance_id,message):
-	max_number_tries = 10
-	while max_number_tries>0:
+	print(f"Inside thread for instance {instance_id} and Message {message["Body"]}")
+	# max_number_tries = 10
+	# while max_number_tries>0:
 
-		try:
-			start_instances([instance_id])
-			waiter_run.wait(
-		    InstanceIds=[instance_id],
-		    DryRun=False
-			)
-			break
-		except Exception as e:
-			print(e)
+	# 	try:
+	# 		start_instances([instance_id])
+	# 		waiter_run.wait(
+	# 	    InstanceIds=[instance_id],
+	# 	    DryRun=False
+	# 		)
+	# 		break
+	# 	except Exception as e:
+	# 		print(e)
 
-		time.sleep(3)
-		max_number_tries-=1
+	# 	time.sleep(3)
+	# 	max_number_tries-=1
 
 	
 
-	instance_dns_names,instance_ids = get_inst_dns_names([instance_id])
-	inst_dns = instance_dns_names[0]
-	inst_id = instance_ids[0]
+	# instance_dns_names,instance_ids = get_inst_dns_names([instance_id])
+	# inst_dns = instance_dns_names[0]
+	# inst_id = instance_ids[0]
 
-	msg_body = message["Body"]
-	msg_receipt_handle = message["ReceiptHandle"]
+	# msg_body = message["Body"]
+	# msg_receipt_handle = message["ReceiptHandle"]
 
-	if max_number_tries==0:
-		handle_visibility(sqs_url,msg_receipt_handle,0)
-		return
+	# if max_number_tries==0:
+	# 	handle_visibility(sqs_url,msg_receipt_handle,0)
+	# 	return
 
-	slave_thread(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle))
+	# slave_thread(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle))
 
 	# x = threading.Thread(target=slave_thread,args=(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle)))
 
@@ -292,10 +293,9 @@ def poll_for_scaling():
 		max_extra_instances = max_instance_limit - len(instance_running) ## Maximum extra instances we can add
 		print(f"Max Extra instances: {max_extra_instances}")
 		print(f"Counter value: {counter}")
-		if counter==5:
-			print("We habve reached out limit cannot scale up")
-		# if max_extra_instances==0:
-		# 	print("We have reached our limit. Cannot scale up")
+	
+		if max_extra_instances==0:
+			print("We have reached our limit. Cannot scale up")
 		# elif num_instances_needed<=max_extra_instances:
 		# 	print("Required instances is less than max extra instances")
 		else:
@@ -304,11 +304,10 @@ def poll_for_scaling():
 				print("Gone inside")
 				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
-					counter+=num_instances_needed
-					print("Got message, scaling up")
-					# t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
-					# t1.start()
-					# t1.join()
+					print("got the message")
+					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
+					t1.start()
+					t1.join()
 				else:
 					break
 			
