@@ -16,6 +16,8 @@ ec2_client = boto3.client('ec2',region_name="us-east-1")
 
 sqs_client = boto3.client('sqs',region_name="us-east-1")
 
+sqs_url = 'https://sqs.us-east-1.amazonaws.com/056594258736/video-process'
+
 # ec2_res = boto3.resource('ec2')
 waiter_run = ec2_client.get_waiter('instance_running')
 waiter_stop = ec2_client.get_waiter('instance_stopped')
@@ -132,7 +134,7 @@ def scale_up_instances(instance_id,message):
 	msg_receipt_handle = message["ReceiptHandle"]
 
 	if max_number_tries==0:
-		handle_visibility('https://sqs.us-east-1.amazonaws.com/056594258736/video-process',msg_receipt_handle,0)
+		handle_visibility(sqs_url,msg_receipt_handle,0)
 		return
 
 	slave_thread(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle))
@@ -231,7 +233,7 @@ def get_instance_ids(status):
 
 def get_queue_attributes():
 	response = sqs_client.get_queue_attributes(
-    QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',
+    QueueUrl=sqs_url,
     AttributeNames=[
         'ApproximateNumberOfMessages','ApproximateNumberOfMessagesNotVisible'
     ]
@@ -286,6 +288,7 @@ def poll_for_scaling():
 			stopped_states = stopped_states+stopping_states
 
 		max_extra_instances = max_instance_limit - len(instance_running) ## Maximum extra instances we can add
+		print(f"Max Extra instances: {max_extra_instances}")
 		
 		if max_extra_instances==0:
 			print("We have reached our limit. Cannot scale up")
@@ -294,7 +297,8 @@ def poll_for_scaling():
 		else:
 			print("Scaling UP by ",min(num_instances_needed,max_extra_instances))
 			for i in range(min(num_instances_needed,max_extra_instances)):
-				queue = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)
+				print("Gone inside")
+				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
 					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
 					t1.start()
