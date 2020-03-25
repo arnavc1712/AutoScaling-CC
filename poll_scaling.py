@@ -300,8 +300,10 @@ def poll_for_scaling():
 				print("Gone inside")
 				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
-					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
-					t1.start()
+					print("Got message, scaling up")
+					# t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
+					# t1.start()
+					# t1.join()
 				else:
 					break
 			
