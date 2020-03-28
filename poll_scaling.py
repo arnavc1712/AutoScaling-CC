@@ -5,12 +5,6 @@ import threading
 
 
 import sched, time
-s = sched.scheduler(time.time, time.sleep)
-
-# userData= """#!/bin/bash
-# Xvfb :1 & export DISPLAY=:1;
-# cd /home/ubuntu/CloudComputingProj1 && python processQueue.py
-# """
 
 ec2_client = boto3.client('ec2',region_name="us-east-1")
 
@@ -18,7 +12,6 @@ sqs_client = boto3.client('sqs',region_name="us-east-1")
 
 sqs_url = 'https://sqs.us-east-1.amazonaws.com/056594258736/video-process'
 
-# ec2_res = boto3.resource('ec2')
 waiter_run = ec2_client.get_waiter('instance_running')
 waiter_stop = ec2_client.get_waiter('instance_stopped')
 
@@ -40,14 +33,7 @@ def slave_thread(host,inst_id,msg_body,msg_receipt_handle):
 	stdin, stdout, stderr = ssh.exec_command(f"pip install boto3;Xvfb :1 & export DISPLAY=:1;cd /home/ubuntu/CloudComputingProj1 && sudo git pull origin master;cd /home/ubuntu/CloudComputingProj1 && sudo python processQueue.py {msg_body} {msg_receipt_handle};")
 	print(stdout.read())
 	print(stderr.read())
-	# channel = ssh.invoke_shell()
-	# stdin = channel.makefile('wb')
-	# stdout = channel.makefile('rb')
 
-	# stdin.write('''
-	# Xvfb :1 & export DISPLAY=:1;
-	# cd /home/ubuntu/CloudComputingProj1 && python processQueue.py;
-	# ''')
 	print(f"Output of {host}\n")
 
 	stdout.close()
@@ -57,43 +43,6 @@ def slave_thread(host,inst_id,msg_body,msg_receipt_handle):
 	stop_instances([inst_id])
 
 
-
-# def scale_up_instances(instance_list):
-# 	while True:
-
-# 		try:
-# 			start_instances(instance_list)
-# 			waiter_run.wait(
-# 		    InstanceIds=instance_list,
-# 		    DryRun=False
-# 			)
-# 			break
-# 		except Exception as e:
-# 			print(e)
-
-# 		time.sleep(3)
-
-	
-# 	pool = []
-
-# 	instance_dns_names,instance_ids = get_inst_dns_names(instance_list)
-# 	print(instance_dns_names)
-# 	for i,(inst_dn,inst_id) in enumerate(zip(instance_dns_names,instance_ids)):
-# 		while True:
-# 			try:
-# 				msg = sqs_client.receive_message(QueueUrl='https://sqs.us-east-1.amazonaws.com/056594258736/video-process',VisibilityTimeout=700)
-# 				if "Messages" in msg and len(msg["Messages"])>0:
-# 					msg = msg["Messages"][0]
-# 					msg_receipt_handle = msg["ReceiptHandle"] 
-# 					msg_body = msg["Body"]
-
-# 					x = threading.Thread(target=slave_thread,args=(inst_dn,inst_id,str(msg_body),str(msg_receipt_handle)))
-# 					x.start()
-# 					pool.append(x)
-# 				break
-
-# 			except Exception as err:
-# 				print(err)
 
 def handle_visibility(queue_url, reciept_handle, value):
     logging.info("Handing visibility for ", reciept_handle)
@@ -138,20 +87,6 @@ def scale_up_instances(instance_id,message):
 		return
 
 	slave_thread(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle))
-
-	# x = threading.Thread(target=slave_thread,args=(inst_dns,inst_id,str(msg_body),str(msg_receipt_handle)))
-
-
-	
-
-
-
-
-	# for thread in pool:
-	# 	thread.join()
-
-
-
 
 
 
@@ -262,10 +197,6 @@ def poll_for_scaling():
 
 	num_instances_needed = math.ceil(num_messages_queue/float(acceptable_backlog))
 
-	# req_instances = num_instances_needed-len(instance_running)
-
-
-
 
 	print("Number of instances Running: ",len(instance_running))
 	print("Number of instances Stopped: ",len(instance_stopped))
@@ -275,7 +206,6 @@ def poll_for_scaling():
 
 	print("Number of instances needed: ",num_instances_needed)
 
-	# print("Number of instances to scale up/down: ",req_instances)
 	print("\n\n\n")
 	
 
@@ -292,51 +222,19 @@ def poll_for_scaling():
 		
 		if max_extra_instances==0:
 			print("We have reached our limit. Cannot scale up")
-		# elif num_instances_needed<=max_extra_instances:
-		# 	print("Required instances is less than max extra instances")
+	
 		else:
 			print("Scaling UP by ",min(num_instances_needed,max_extra_instances))
 			for i in range(min(num_instances_needed,max_extra_instances)):
-				print("Gone inside")
 				queue = sqs_client.receive_message(QueueUrl=sqs_url,VisibilityTimeout=700)
 				if "Messages" in queue:
 					t1=threading.Thread(target=scale_up_instances,args=(stopped_states[i],queue["Messages"][0]))
 					t1.start()
 				else:
 					break
-			
-		# else:
-		# 	print("Required instances is more than max extra instances")
-		# 	print("Scaling UP by ",max_extra_instances)
-		# 	t1= threading.Thread(target=scale_up_instances,args=(stopped_states[:max_extra_instances],))
-		# 	t1.start()
-
-		
-			
-
-	# elif len(instance_running)>num_instances_needed:
-	# 	print("Scaling DOWN by ",req_instances)
-	# 	stop_instances(instance_running[:req_instances])
-
-
-
-
-	# s.enter(15, 1, poll_for_scaling, (sc,))
-	# 
-
-
-# def do_something(sc): 
-#     print("Doing stuff...")
-#     # do your stuff
-#     s.enter(5, 1, do_something, (sc,))
-
-# s.enter(2, 1, poll_for_scaling, (s,))
-# s.run()
-
-# fetch_instances("running"))
 
 while True:
 	poll_for_scaling()
 	time.sleep(10)
 
-# scale_up_instances(['i-0146e0336e7162a36'])
+
