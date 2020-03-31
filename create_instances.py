@@ -68,5 +68,5 @@ def create_instances(num):
 	# stop_instances(instance_ids)
 
 
-create_instances(15)
+create_instances(19)
 

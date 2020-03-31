@@ -23,6 +23,7 @@ ec2_client = boto3.client('ec2',region_name="us-east-1")
 MAX_NUM_THREADS = 1
 MAX_QUEUE_SIZE = int(sys.argv[1])
 NUM_VIDEOS_NEEDED = int(sys.argv[2])
+COUNTER=0
 
 q = Queue.Queue(MAX_QUEUE_SIZE)
 
@@ -33,7 +34,7 @@ def thread_function(filename):
     print command
     process = subprocess.Popen(command,shell=True, cwd=PATH_DARKNET)
     process.wait()
-    key = filename.split(".")[0]
+    key = filename
     command2 = "python processPiResults.py " + key
     process2 = subprocess.Popen(command2, shell=True, cwd=PATH_CLOUD)
     process2.wait()
@@ -56,6 +57,9 @@ class ConsumerThread(threading.Thread):
                 print "Filename: " + filename + " being processed by " + self.name
                 thread_function(filename)
                 q.task_done()
+                if os.path.exists(filename):
+                    os.remove(filename)
+                    time.sleep(0.1)
             time.sleep(3)
         return
 
@@ -94,7 +98,7 @@ while NUM_VIDEOS_NEEDED:
     elif i == 1:
         print "Intruder detected"
         on = time.time()
-        key = generate_random_object_name(5)
+        key = "video_"+str(COUNTER)
         filename = key + '.h264'
         
         process1 = subprocess.Popen('python /home/pi/facedetect/take_snapshot.py ' + filename, shell=True)
@@ -109,7 +113,7 @@ while NUM_VIDEOS_NEEDED:
         else:
             print("\n\nQueue not full, Adding filename to Queue\n\n")
             q.put(filename)
+
+        COUNTER+=1
 	
-	# if os.path.exists(filename):
-	# 	os.remove(filename)
- #        time.sleep(0.1)
+	
